@@ -2950,3 +2950,331 @@
     padding: 10px 14px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE HARDENING — tablets and phones
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .shell {
+    width: 100%;
+  }
+
+  .workspace,
+  .content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .mapPanel,
+  .queuePanel,
+  .tablePanel,
+  .formPanel,
+  .wizardCard,
+  .fleetLayout,
+  .peopleForm,
+  .profileDrawer,
+  .alertItem,
+  .ownerVehicleCard,
+  .ownerCard,
+  .driverCard,
+  .vehicleCard,
+  .metricCard,
+  .statCard {
+    max-width: 100%;
+  }
+
+  .tablePanel,
+  .formPanel,
+  .mapPanel,
+  .queuePanel {
+    padding: 18px;
+  }
+
+  .tableWrap,
+  .tableWrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .tableWrap table,
+  .table {
+    min-width: 720px;
+  }
+
+  .sectionHeader,
+  .peopleCardsHeader,
+  .ownerCardFooter,
+  .profileField,
+  .filterActions {
+    min-width: 0;
+  }
+
+  .filterActions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .loginShell,
+  .main {
+    min-height: 100dvh;
+  }
+
+  .loginPanel,
+  .loginCard {
+    min-height: 100dvh;
+    justify-content: start;
+  }
+
+  .loginPanelInner,
+  .loginCardInner {
+    gap: 24px;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 200;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    max-height: 82px;
+    border: 0;
+    border-top: 1px solid rgba(34, 197, 94, 0.16);
+    box-shadow: 0 -8px 26px rgba(13, 31, 23, 0.16);
+  }
+
+  .brand,
+  .sidebarBrand,
+  .sidebarBottom,
+  .sidebarFooter,
+  .navGroupLabel,
+  .sidebarDivider {
+    display: none;
+  }
+
+  .nav,
+  .sidebarNav {
+    width: 100%;
+    max-width: 100vw;
+    min-height: 66px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    gap: 6px;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .navGroup {
+    gap: 6px;
+  }
+
+  .navGroup + .navGroup {
+    padding-left: 6px;
+    margin-left: 0;
+  }
+
+  .navItem,
+  .navActive,
+  .sidebarNav .navItem,
+  .sidebarNav .navItemActive {
+    min-height: 48px;
+    min-width: 82px;
+    flex: 0 0 auto;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 10px;
+    scroll-snap-align: center;
+    border-radius: 10px;
+  }
+
+  .navIcon {
+    width: auto;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .navLabel {
+    max-width: 92px;
+    text-align: center;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  .navBadge {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+  }
+
+  .workspace,
+  .content {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .headerActions,
+  .filterActions {
+    width: 100%;
+  }
+
+  .headerActions > *,
+  .filterActions > * {
+    min-width: 0;
+  }
+
+  .filterActions button,
+  .headerActions button,
+  .sectionHeader button {
+    flex: 1 1 150px;
+  }
+
+  .peopleCardsHeader {
+    flex-wrap: wrap;
+  }
+
+  .driverCard {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .driverCardBadges {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .ownerCardFooter,
+  .profileField,
+  .ownerVehicleField {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profileFieldValue,
+  .ownerVehicleFieldValue {
+    width: 100%;
+    text-align: left;
+  }
+
+  .wizardBody,
+  .fleetMain {
+    padding: 16px;
+  }
+
+  .routeMap {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 540px) {
+  .workspace,
+  .content {
+    padding-inline: 12px;
+  }
+
+  .tablePanel,
+  .formPanel,
+  .mapPanel,
+  .queuePanel,
+  .peopleForm,
+  .profileDrawer {
+    padding: 14px;
+  }
+
+  .metrics,
+  .statStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .metricCard,
+  .statCard {
+    padding: 14px;
+  }
+
+  .metricCard strong {
+    font-size: 30px;
+  }
+
+  .tableWrap table,
+  .table {
+    min-width: 640px;
+  }
+
+  .inlineActions {
+    width: max-content;
+    max-width: 240px;
+  }
+
+  .filterRow {
+    align-items: stretch;
+  }
+
+  .filterRow > *,
+  .filterSelect,
+  .filterInput {
+    width: 100%;
+  }
+
+  .formPanel button,
+  .primaryAction,
+  .primaryButton,
+  .secondaryButton,
+  .filterActions button {
+    width: 100%;
+  }
+
+  .quickChipInfo {
+    min-width: 0;
+  }
+
+  .quickChipName,
+  .quickChipRole {
+    white-space: normal;
+  }
+
+  .alertHeader {
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .alertType,
+  .alertMessage,
+  .alertMeta {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 380px) {
+  .workspace,
+  .content {
+    padding-inline: 10px;
+  }
+
+  .tablePanel,
+  .formPanel,
+  .mapPanel,
+  .queuePanel,
+  .peopleForm,
+  .profileDrawer {
+    padding: 12px;
+  }
+
+  .navItem,
+  .navActive,
+  .sidebarNav .navItem,
+  .sidebarNav .navItemActive {
+    min-width: 74px;
+    padding-inline: 8px;
+  }
+
+  .navLabel {
+    max-width: 76px;
+  }
+}
