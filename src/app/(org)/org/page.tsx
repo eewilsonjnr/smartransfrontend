@@ -282,7 +282,7 @@ export default function OrgDashboard() {
     if (severity) params.set("severity", severity);
     if (organizationId) params.set("organizationId", organizationId);
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api"}/violations?${params}`,
+      `${API_BASE}/violations?${params}`,
       { headers: { Authorization: `Bearer ${activeToken}` } },
     ).then((r) => r.json());
     setViolations(res.data ?? []);

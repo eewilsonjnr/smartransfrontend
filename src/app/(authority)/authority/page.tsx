@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { apiLogin, apiRequest, formatDate, humanize } from "../../../lib/api";
+import { API_BASE, apiLogin, apiRequest, formatDate, humanize } from "../../../lib/api";
 import type { DashboardAlert, DashboardUser, Pagination } from "../../../lib/api";
 import {
   ERROR_TOAST_DISMISS_MS,
@@ -134,9 +134,8 @@ export default function AuthorityDashboard() {
     setError(null);
     try {
       const q = buildQuery(f);
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api";
       const [violRes, offRes, alertRes, authorityRes, authorityUserRes] = await Promise.all([
-        fetch(`${API}/violations?${q}`, { headers: { Authorization: `Bearer ${activeToken}` } }).then((r) => r.json()),
+        fetch(`${API_BASE}/violations?${q}`, { headers: { Authorization: `Bearer ${activeToken}` } }).then((r) => r.json()),
         apiRequest<RepeatOffender[]>("/violations/repeat-offenders", activeToken),
         apiRequest<DashboardAlert[]>("/alerts", activeToken),
         apiRequest<Authority[]>("/authorities", activeToken).catch(() => []),
@@ -158,8 +157,7 @@ export default function AuthorityDashboard() {
   const loadAuditLogs = async (activeToken = token, page = 1) => {
     if (!activeToken) return;
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api";
-      const res = await fetch(`${API}/audit-logs?page=${page}&limit=50`, {
+      const res = await fetch(`${API_BASE}/audit-logs?page=${page}&limit=50`, {
         headers: { Authorization: `Bearer ${activeToken}` },
       }).then((r) => r.json());
       setAuditLogs(res.data ?? []);
@@ -252,8 +250,7 @@ export default function AuthorityDashboard() {
     const q = buildQuery({ ...filters, page: 1, limit: 1000 });
     setIsLoading(true);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api";
-      const response = await fetch(`${API}/reports/violations.csv?${q}`, {
+      const response = await fetch(`${API_BASE}/reports/violations.csv?${q}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error(`Export failed: ${response.status}`);

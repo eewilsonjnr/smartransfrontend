@@ -7,9 +7,9 @@ import {
   NOTICE_TOAST_DISMISS_MS,
   useAutoDismissMessage,
 } from "../lib/useAutoDismissMessage";
+import { API_BASE } from "../lib/api";
 import styles from "./page.module.css";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api";
 const DEFAULT_DRIVER_PASSWORD = "driver@1";
 const DEFAULT_ORG_STAFF_PASSWORD = "staff@1";
 const DEFAULT_OWNER_PASSWORD = "owner@1";

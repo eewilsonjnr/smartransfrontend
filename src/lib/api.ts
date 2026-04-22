@@ -1,4 +1,23 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api";
+const normalizeApiBase = (value: string) => {
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const withoutLeadingSlash = trimmed.replace(/^\/+/, "");
+  const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?(?:\/|$)/i.test(withoutLeadingSlash);
+
+  if (looksLikeDomain) {
+    return `https://${withoutLeadingSlash}`;
+  }
+
+  return trimmed;
+};
+
+export const API_BASE = normalizeApiBase(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000/api",
+);
 
 export async function apiRequest<T>(
   path: string,
