@@ -471,11 +471,19 @@
   background: var(--bg-page);
   color: var(--text-dark);
   font-family: var(--font-geist-sans);
+  overflow-x: hidden;
+}
+
+.workspace,
+.content {
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* ── Sidebar ── */
 .sidebar {
   width: 240px;
+  min-width: 0;
   min-height: 100vh;
   height: 100vh;
   position: sticky;
@@ -872,13 +880,7 @@
    MAIN WORKSPACE
    ════════════════════════════════════════════════════════════════════════════ */
 
-.workspace {
-  padding: 28px 32px;
-  display: grid;
-  gap: 24px;
-  align-content: start;
-}
-
+.workspace,
 .content {
   padding: 28px 32px;
   display: grid;
@@ -1142,20 +1144,25 @@
 
 .mainGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.75fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.75fr);
   gap: 16px;
 }
 
+.mainGrid > * { min-width: 0; }
+
 .managementGrid {
   display: grid;
-  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 16px;
   align-items: start;
 }
 
+.managementGrid > * { min-width: 0; }
+
 .managementStack {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 
 .twoColumn {
@@ -1164,6 +1171,8 @@
   gap: 16px;
   align-items: start;
 }
+
+.twoColumn > * { min-width: 0; }
 
 /* ── Form panels ── */
 .formPanel {
@@ -1181,7 +1190,7 @@
 
 .formGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 14px;
 }
 
@@ -1269,7 +1278,7 @@
 
 .filterGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 12px;
   margin-top: 14px;
 }
@@ -1805,10 +1814,12 @@
 /* 3-column layout: form | cards | drawer */
 .peopleLayout {
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr) 310px;
+  grid-template-columns: minmax(0, 290px) minmax(0, 1fr) minmax(0, 310px);
   gap: 20px;
   align-items: start;
 }
+
+.peopleLayout > * { min-width: 0; }
 
 /* Form panel (left column) */
 .peopleForm {
@@ -2281,7 +2292,7 @@
 
 .fleetLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 310px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 310px);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   background: #ffffff;
@@ -2490,6 +2501,7 @@
 @media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
   }
 
   .sidebar {
@@ -2499,7 +2511,8 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
     border-right: 0;
     border-bottom: 1px solid rgba(34, 197, 94, 0.12);
   }
