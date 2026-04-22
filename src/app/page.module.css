@@ -2450,6 +2450,7 @@
    RESPONSIVE
    ════════════════════════════════════════════════════════════════════════════ */
 
+/* ── 1200px — hide brand panel on login, collapse login to single column ── */
 @media (max-width: 1200px) {
   .loginShell,
   .main {
@@ -2457,14 +2458,35 @@
   }
 
   .loginBrand { display: none; }
+
+  /* Full-width form on tablets */
+  .loginPanelInner,
+  .loginCardInner {
+    width: min(100%, 480px);
+  }
 }
 
+/* ── 1080px — 4-col metrics → 2-col, tighten multi-col grids ── */
 @media (max-width: 1080px) {
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .peopleLayout {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  /* Hide profile drawer in second column, show below cards */
+  .peopleLayout > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .mainGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.6fr);
+  }
 }
 
+/* ── 980px — sidebar collapses to horizontal top bar ── */
 @media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
@@ -2474,19 +2496,24 @@
     width: 100%;
     min-height: auto;
     height: auto;
-    position: relative;
-    top: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
     overflow: visible;
     border-right: 0;
-    border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+    border-bottom: 1px solid rgba(34, 197, 94, 0.12);
   }
 
   .nav {
     flex-direction: row;
     overflow-x: auto;
-    padding: 8px 10px 10px;
+    overflow-y: hidden;
+    padding: 6px 10px 8px;
     gap: 2px;
+    scrollbar-width: none;
   }
+
+  .nav::-webkit-scrollbar { display: none; }
 
   .navGroup {
     flex-direction: row;
@@ -2495,7 +2522,13 @@
     margin: 0;
   }
 
-  .navGroup + .navGroup { margin-top: 0; }
+  .navGroup + .navGroup {
+    margin-top: 0;
+    padding-left: 8px;
+    border-left: 1px solid rgba(34, 197, 94, 0.1);
+    margin-left: 4px;
+  }
+
   .navGroupLabel,
   .sidebarDivider { display: none; }
 
@@ -2505,13 +2538,15 @@
   .sidebarNav .navItemActive {
     width: auto;
     min-width: max-content;
+    min-height: 36px;
     padding: 0 12px;
+    font-size: 12px;
   }
 
   .navActive::before,
   .sidebarNav .navItemActive::before {
-    left: 10px;
-    right: 10px;
+    left: 8px;
+    right: 8px;
     top: auto;
     bottom: 0;
     width: auto;
@@ -2521,25 +2556,31 @@
 
   .brand,
   .sidebarBrand {
-    padding: 12px 14px;
-    min-height: 60px;
+    padding: 10px 14px;
+    min-height: 56px;
+    border-bottom: 0;
   }
 
   .sidebarNav {
     flex-direction: row;
     overflow-x: auto;
-    padding: 8px 10px 10px;
+    overflow-y: hidden;
+    padding: 6px 10px 8px;
+    scrollbar-width: none;
   }
+
+  .sidebarNav::-webkit-scrollbar { display: none; }
 
   .sidebarBottom,
   .sidebarFooter {
     margin: 0;
-    padding: 8px 12px 12px;
+    padding: 6px 12px 10px;
   }
 
   .sidebarFooter {
     border-radius: 0;
     border: 0;
+    border-top: 1px solid rgba(34, 197, 94, 0.08);
     background: rgba(27, 46, 35, 0.55);
   }
 
@@ -2547,8 +2588,14 @@
 
   .mainGrid,
   .managementGrid,
-  .twoColumn,
-  .peopleLayout,
+  .twoColumn {
+    grid-template-columns: 1fr;
+  }
+
+  .peopleLayout {
+    grid-template-columns: 1fr;
+  }
+
   .fleetLayout {
     grid-template-columns: 1fr;
   }
@@ -2560,40 +2607,333 @@
 
   .profileDrawer { position: static; }
   .peopleForm    { position: static; }
-}
 
-@media (max-width: 680px) {
   .workspace,
   .content {
-    padding: 16px;
+    padding: 20px 24px;
+  }
+}
+
+/* ── 768px — tablet portrait: tighten forms, adjust grids ── */
+@media (max-width: 768px) {
+  .workspace,
+  .content {
+    padding: 16px 18px;
+    gap: 18px;
   }
 
   .loginPanel,
   .loginCard {
-    padding: 28px 20px;
+    padding: 36px 28px;
   }
 
-  .header,
-  .sectionHeader,
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header h1 { font-size: 26px; }
+
   .headerActions {
-    align-items: stretch;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .headerActions button,
+  .sectionHeader button {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  .searchInput {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sectionHeader {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .sectionHeader h2 { font-size: 17px; }
+
+  /* Wizard step labels hidden on narrow screens — show only badges */
+  .wizardLabel { display: none; }
+
+  .wizardStep {
+    justify-content: center;
+    padding: 12px 10px;
+  }
+
+  .filterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ownerGrid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .ownerVehicleGrid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  .statStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Table — let lower-priority columns wrap on small tablets */
+  .tableWrap td,
+  .tableWrap th,
+  .table td,
+  .table th {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  .profileActions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 600px — large phones (landscape) ── */
+@media (max-width: 600px) {
+  .workspace,
+  .content {
+    padding: 14px 16px;
+    gap: 14px;
+  }
+
+  .loginPanel,
+  .loginCard {
+    padding: 28px 18px;
+  }
+
+  .loginPanelTitle,
+  .loginTitle {
+    font-size: 24px;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .metricCard {
+    padding: 16px 16px;
+  }
+
+  .metricCard strong { font-size: 28px; }
+
+  .statStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .statCardValue { font-size: 24px; }
+
+  .header h1 { font-size: 22px; }
+
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Quick-login chips wrap gracefully */
+  .quickLoginChips {
     flex-direction: column;
   }
 
-  .searchInput { width: 100%; }
-  .header h1  { font-size: 24px; }
+  .quickChip {
+    width: 100%;
+  }
 
-  .metrics,
+  .peopleTabBar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .peopleTabBar::-webkit-scrollbar { display: none; }
+
+  .peopleTab,
+  .peopleTabActive {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Wider touch targets for inline actions */
+  .inlineButton,
+  .inlineDanger {
+    min-height: 34px;
+    padding: 0 12px;
+  }
+
+  .paginationRow {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+}
+
+/* ── 480px — small phones (portrait) ── */
+@media (max-width: 480px) {
+  .workspace,
+  .content {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .loginPanel,
+  .loginCard {
+    padding: 24px 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .header h1 { font-size: 20px; }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    flex-direction: column;
+  }
+
+  .headerActions button,
+  .sectionHeader button {
+    width: 100%;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .metricCard {
+    padding: 14px 14px;
+  }
+
+  .metricCard strong { font-size: 26px; }
+
+  .statStrip {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .statCardValue { font-size: 22px; }
+
+  /* Full-width form fields */
   .formGrid,
   .filterGrid {
     grid-template-columns: 1fr;
   }
 
-  .metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Table horizontal scroll with visual hint */
+  .tableWrap,
+  .tableWrapper {
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius);
   }
 
-  .statStrip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .tableWrap td,
+  .tableWrap th,
+  .table td,
+  .table th {
+    padding: 8px 10px;
+    font-size: 11.5px;
+  }
+
+  /* Vehicle & owner grids go single column */
+  .vehicleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ownerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ownerVehicleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Wizard step bar: icon only */
+  .wizardStep {
+    padding: 10px 8px;
+    flex: 0 0 auto;
+  }
+
+  .wizardStepBar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .wizardStepBar::-webkit-scrollbar { display: none; }
+
+  /* Driver cards simplified on phone */
+  .driverCard {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .driverCardAvatar {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+  }
+
+  /* Profile drawer: condensed stats */
+  .profileStats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profileStatValue { font-size: 15px; }
+
+  .profileActions {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  /* Increase touch target sizes */
+  .navItem,
+  .navActive,
+  .sidebarNav .navItem,
+  .sidebarNav .navItemActive {
+    min-height: 40px;
+  }
+
+  .inlineButton,
+  .inlineDanger {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+  .logoutButton {
+    min-height: 40px;
+  }
+
+  /* Toast banners full width */
+  .errorBanner,
+  .noticeBanner,
+  .errorText,
+  .noticeText {
+    font-size: 12px;
+    padding: 10px 14px;
   }
 }
