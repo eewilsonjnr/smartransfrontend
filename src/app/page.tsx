@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
@@ -349,6 +351,8 @@ export default function Home() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [activeSection, setActiveSection] = useState<Section>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState<DashboardData>(emptyData);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -809,6 +813,7 @@ export default function Home() {
 
   const handleApplyReportFilters = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setViolationPage(1);
     if (token) {
       await loadDashboard(token, reportFilters);
     }
@@ -816,6 +821,7 @@ export default function Home() {
 
   const handleClearReportFilters = async () => {
     setReportFilters(emptyReportFilters);
+    setViolationPage(1);
     if (token) {
       await loadDashboard(token, emptyReportFilters);
     }
@@ -1099,8 +1105,14 @@ export default function Home() {
     );
   }
 
+  const shellClassName = [
+    styles.shell,
+    sidebarCollapsed ? styles.shellCollapsed : "",
+    sidebarOpen ? styles.shellNavOpen : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <main className={styles.shell}>
+    <main className={shellClassName}>
       <aside className={styles.sidebar} aria-label="SmarTrans navigation">
         <div className={styles.brand}>
           <div className={styles.brandMark}>ST</div>
@@ -1108,6 +1120,15 @@ export default function Home() {
             <strong>SmarTrans</strong>
             <span>Connect</span>
           </div>
+          <button
+            type="button"
+            className={styles.sidebarToggle}
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!sidebarCollapsed}
+          >
+            ‹
+          </button>
         </div>
 
         <div className={styles.sidebarDivider} />
@@ -1127,7 +1148,10 @@ export default function Home() {
                     key={section.id}
                     type="button"
                     className={activeSection === section.id ? styles.navActive : styles.navItem}
-                    onClick={() => setActiveSection(section.id)}
+                    onClick={() => {
+                      setActiveSection(section.id);
+                      setSidebarOpen(false);
+                    }}
                     aria-current={activeSection === section.id ? "page" : undefined}
                   >
                     <span className={styles.navIcon} aria-hidden="true">{section.icon}</span>
@@ -1161,7 +1185,26 @@ export default function Home() {
         </div>
       </aside>
 
+      <button
+        type="button"
+        className={styles.sidebarBackdrop}
+        onClick={() => setSidebarOpen(false)}
+        aria-label="Close navigation"
+      />
+
       <section className={styles.workspace}>
+        <div className={styles.mobileTopbar}>
+          <button
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            ☰
+          </button>
+          <span>Operations</span>
+        </div>
+
         <header className={styles.header}>
           <div>
             <p className={styles.eyebrow}>Operations dashboard</p>

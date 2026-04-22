@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
 import { FormEvent, useEffect, useState } from "react";
 import { API_BASE, apiLogin, apiRequest, formatDate, humanize } from "../../../lib/api";
 import type { DashboardAlert, DashboardUser, Pagination } from "../../../lib/api";
@@ -91,6 +93,8 @@ export default function AuthorityDashboard() {
   const [token, setToken]           = useState<string | null>(null);
   const [user, setUser]             = useState<DashboardUser | null>(null);
   const [activeSection, setActiveSection] = useState<Section>("violations");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [violations, setViolations]       = useState<Violation[]>([]);
   const [repeatOffenders, setRepeatOffenders] = useState<RepeatOffender[]>([]);
   const [alerts, setAlerts]     = useState<DashboardAlert[]>([]);
@@ -380,8 +384,14 @@ export default function AuthorityDashboard() {
     ...(canViewAuditLogs ? [{ id: "audit" as Section, label: "Audit logs", icon: "≡" }] : []),
   ];
 
+  const shellClassName = [
+    styles.shell,
+    sidebarCollapsed ? styles.shellCollapsed : "",
+    sidebarOpen ? styles.shellNavOpen : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <div className={styles.shell}>
+    <div className={shellClassName}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBrand}>
           <div className={styles.brandMark}>ST</div>
@@ -389,13 +399,25 @@ export default function AuthorityDashboard() {
             <p className={styles.brandName}>SmarTrans</p>
             <p className={styles.brandRole}>Authority</p>
           </div>
+          <button
+            type="button"
+            className={styles.sidebarToggle}
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!sidebarCollapsed}
+          >
+            ‹
+          </button>
         </div>
         <nav className={styles.sidebarNav}>
           {navItems.map((item) => (
             <button
               key={item.id}
               className={`${styles.navItem} ${activeSection === item.id ? styles.navItemActive : ""}`}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => {
+                setActiveSection(item.id);
+                setSidebarOpen(false);
+              }}
             >
               <span className={styles.navIcon} aria-hidden="true">{item.icon}</span>
               <span className={styles.navLabel}>{item.label}</span>
@@ -412,17 +434,36 @@ export default function AuthorityDashboard() {
         </div>
       </aside>
 
+      <button
+        type="button"
+        className={styles.sidebarBackdrop}
+        onClick={() => setSidebarOpen(false)}
+        aria-label="Close navigation"
+      />
+
       <main className={styles.content}>
+        <div className={styles.mobileTopbar}>
+          <button
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            ☰
+          </button>
+          <span>Authority</span>
+        </div>
+
         {notice && <div className={styles.noticeBanner}>{notice}</div>}
         {error  && <div className={styles.errorBanner}>{error}</div>}
 
         {activeSection === "violations" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGrid}>
             {/* Header */}
             <div className={styles.header}>
               <div>
                 <p className={styles.eyebrow}>Authority dashboard</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: -0.6 }}>Speed violations</h1>
+                <h1 className={styles.pageHeading}>Speed violations</h1>
                 <p className={styles.userLine}>
                   {pagination?.total ?? violations.length} total violations recorded
                 </p>
@@ -557,11 +598,11 @@ export default function AuthorityDashboard() {
         )}
 
         {activeSection === "offenders" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.header}>
               <div>
                 <p className={styles.eyebrow}>Risk monitoring</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: -0.6 }}>Repeat offenders</h1>
+                <h1 className={styles.pageHeading}>Repeat offenders</h1>
                 <p className={styles.userLine}>{repeatOffenders.length} drivers with multiple violations</p>
               </div>
             </div>
@@ -600,7 +641,7 @@ export default function AuthorityDashboard() {
         )}
 
         {activeSection === "alerts" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGridSm}>
             <div className={styles.sectionHeader}>
               <div>
                 <p className={styles.eyebrow}>Notification centre</p>
@@ -753,11 +794,11 @@ export default function AuthorityDashboard() {
         )}
 
         {activeSection === "audit" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.header}>
               <div>
                 <p className={styles.eyebrow}>Compliance</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: -0.6 }}>Audit logs</h1>
+                <h1 className={styles.pageHeading}>Audit logs</h1>
                 <p className={styles.userLine}>{auditLogs.length} entries loaded</p>
               </div>
             </div>

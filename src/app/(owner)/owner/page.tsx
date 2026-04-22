@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
 import { FormEvent, useEffect, useState } from "react";
 import { apiLogin, apiRequest, formatDate, humanize } from "../../../lib/api";
 import type { DashboardAlert, DashboardUser } from "../../../lib/api";
@@ -74,6 +76,8 @@ export default function OwnerDashboard() {
   const [token, setToken]           = useState<string | null>(null);
   const [user, setUser]             = useState<DashboardUser | null>(null);
   const [activeSection, setActiveSection] = useState<Section>("fleet");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [vehicles, setVehicles]     = useState<Vehicle[]>([]);
   const [trips, setTrips]           = useState<Trip[]>([]);
   const [violations, setViolations] = useState<Violation[]>([]);
@@ -251,8 +255,14 @@ export default function OwnerDashboard() {
     { id: "alerts",     label: `Alerts${unreadCount > 0 ? ` (${unreadCount})` : ""}`, icon: "◦" },
   ];
 
+  const shellClassName = [
+    styles.shell,
+    sidebarCollapsed ? styles.shellCollapsed : "",
+    sidebarOpen ? styles.shellNavOpen : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <div className={styles.shell}>
+    <div className={shellClassName}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBrand}>
           <div className={styles.brandMark}>ST</div>
@@ -260,13 +270,25 @@ export default function OwnerDashboard() {
             <p className={styles.brandName}>SmarTrans</p>
             <p className={styles.brandRole}>Owner portal</p>
           </div>
+          <button
+            type="button"
+            className={styles.sidebarToggle}
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!sidebarCollapsed}
+          >
+            ‹
+          </button>
         </div>
         <nav className={styles.sidebarNav}>
           {navItems.map((item) => (
             <button
               key={item.id}
               className={`${styles.navItem} ${activeSection === item.id ? styles.navItemActive : ""}`}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => {
+                setActiveSection(item.id);
+                setSidebarOpen(false);
+              }}
             >
               <span className={styles.navIcon} aria-hidden="true">{item.icon}</span>
               <span className={styles.navLabel}>{item.label}</span>
@@ -283,17 +305,36 @@ export default function OwnerDashboard() {
         </div>
       </aside>
 
+      <button
+        type="button"
+        className={styles.sidebarBackdrop}
+        onClick={() => setSidebarOpen(false)}
+        aria-label="Close navigation"
+      />
+
       <main className={styles.content}>
+        <div className={styles.mobileTopbar}>
+          <button
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            ☰
+          </button>
+          <span>Owner portal</span>
+        </div>
+
         {notice && <div className={styles.noticeBanner}>{notice}</div>}
         {error  && <div className={styles.errorBanner}>{error}</div>}
 
         {activeSection === "fleet" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGrid}>
             {/* Page header */}
             <div className={styles.header}>
               <div>
                 <p className={styles.eyebrow}>Fleet management</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: -0.6 }}>My vehicles</h1>
+                <h1 className={styles.pageHeading}>My vehicles</h1>
                 <p className={styles.userLine}>Welcome back, <strong>{user?.fullName}</strong></p>
               </div>
               <div className={styles.headerActions}>
@@ -370,11 +411,11 @@ export default function OwnerDashboard() {
         )}
 
         {activeSection === "trips" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.header}>
               <div>
                 <p className={styles.eyebrow}>Fleet activity</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: -0.6 }}>Trip history</h1>
+                <h1 className={styles.pageHeading}>Trip history</h1>
                 <p className={styles.userLine}>{trips.length} trips across all vehicles</p>
               </div>
             </div>
@@ -466,11 +507,11 @@ export default function OwnerDashboard() {
         )}
 
         {activeSection === "violations" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.header}>
               <div>
                 <p className={styles.eyebrow}>Compliance</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: -0.6 }}>Violations</h1>
+                <h1 className={styles.pageHeading}>Violations</h1>
                 <p className={styles.userLine}>{violations.length} violations across your fleet</p>
               </div>
             </div>
@@ -509,7 +550,7 @@ export default function OwnerDashboard() {
         )}
 
         {activeSection === "alerts" && (
-          <section style={{ display: "grid", gap: 20 }}>
+          <section className={styles.sectionGridSm}>
             <div className={styles.sectionHeader}>
               <div>
                 <p className={styles.eyebrow}>Notification centre</p>

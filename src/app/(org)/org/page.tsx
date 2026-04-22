@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
 import { FormEvent, useEffect, useState } from "react";
 import { API_BASE, apiLogin, apiRequest, formatDate, humanize } from "../../../lib/api";
 import type { DashboardAlert, DashboardUser } from "../../../lib/api";
@@ -135,9 +137,9 @@ const DEFAULT_OWNER_PASSWORD = "owner@1";
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function statusColor(s: string) {
-  if (s === "ACTIVE" || s === "IN_PROGRESS") return "#1f7a4b";
-  if (s === "COMPLETED") return "#5c6d64";
-  return "#d4513c";
+  if (s === "ACTIVE" || s === "IN_PROGRESS") return "var(--green-dark)";
+  if (s === "COMPLETED") return "var(--text-muted)";
+  return "var(--red)";
 }
 
 function PagerRow({
@@ -177,6 +179,8 @@ export default function OrgDashboard() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [activeSection, setActiveSection] = useState<Section>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Data
   const [orgs, setOrgs] = useState<Organization[]>([]);
@@ -758,11 +762,6 @@ export default function OrgDashboard() {
       d.licenseNumber.toLowerCase().includes(q) ||
       d.organization.name.toLowerCase().includes(q),
   );
-  const filteredVehicles = scopedVehicles.filter(
-    (v) =>
-      v.registrationNumber.toLowerCase().includes(q) ||
-      v.vehicleType.toLowerCase().includes(q),
-  );
   const filteredTrips = scopedTrips.filter(
     (t) =>
       ((t.driver?.user.fullName ?? "").toLowerCase().includes(q) ||
@@ -799,6 +798,12 @@ export default function OrgDashboard() {
     { id: "violations", label: "Violations", icon: "!" },
     { id: "alerts", label: `Alerts${unreadCount > 0 ? ` (${unreadCount})` : ""}`, icon: "◦" },
   ];
+
+  const shellClassName = [
+    styles.shell,
+    sidebarCollapsed ? styles.shellCollapsed : "",
+    sidebarOpen ? styles.shellNavOpen : "",
+  ].filter(Boolean).join(" ");
 
   // ── Login screen ─────────────────────────────────────────────────────────────
 
@@ -842,7 +847,7 @@ export default function OrgDashboard() {
   // ── Dashboard ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className={styles.shell}>
+    <div className={shellClassName}>
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBrand}>
@@ -851,13 +856,25 @@ export default function OrgDashboard() {
             <p className={styles.brandName}>{primaryOrg?.name ?? "SmarTrans"}</p>
             <p className={styles.brandRole}>{humanize(user?.role ?? "")}</p>
           </div>
+          <button
+            type="button"
+            className={styles.sidebarToggle}
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!sidebarCollapsed}
+          >
+            ‹
+          </button>
         </div>
         <nav className={styles.sidebarNav}>
           {navItems.map((item) => (
             <button
               key={item.id}
               className={`${styles.navItem} ${activeSection === item.id ? styles.navItemActive : ""}`}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => {
+                setActiveSection(item.id);
+                setSidebarOpen(false);
+              }}
             >
               <span className={styles.navIcon} aria-hidden="true">{item.icon}</span>
               <span className={styles.navLabel}>{item.label}</span>
@@ -873,8 +890,27 @@ export default function OrgDashboard() {
         </div>
       </aside>
 
+      <button
+        type="button"
+        className={styles.sidebarBackdrop}
+        onClick={() => setSidebarOpen(false)}
+        aria-label="Close navigation"
+      />
+
       {/* Main content */}
       <main className={styles.content}>
+        <div className={styles.mobileTopbar}>
+          <button
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            ☰
+          </button>
+          <span>{primaryOrg?.name ?? "Organisation"}</span>
+        </div>
+
         {notice && <div className={styles.noticeBanner} onClick={() => setNotice(null)}>{notice}</div>}
         {error && <div className={styles.errorBanner} onClick={() => setError(null)}>{error}</div>}
 
@@ -884,7 +920,7 @@ export default function OrgDashboard() {
               <p className={styles.eyebrow}>Organisation scope</p>
               <h2 className={styles.sectionTitle}>{primaryOrg?.name ?? "Organisation"}</h2>
             </div>
-            <label className={styles.fieldLabel} style={{ minWidth: 260 }}>
+            <label className={styles.scopeLabel}>
               Organisation
               <select
                 className={styles.fieldInput}
@@ -915,7 +951,7 @@ export default function OrgDashboard() {
 
         {/* ── Overview ─────────────────────────────────────────────────────── */}
         {activeSection === "overview" && (
-          <section style={{ display: "grid", gap: 24 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 {primaryOrg?.name ?? "Organisation"} overview
@@ -933,10 +969,10 @@ export default function OrgDashboard() {
               {[
                 { label: "Drivers", value: scopedDrivers.length, color: "#1f7a4b" },
                 { label: "Vehicles", value: scopedVehicles.length, color: "#1f7a4b" },
-                { label: "Active trips", value: activeTrips, color: activeTrips > 0 ? "#f0c84b" : "#5c6d64" },
-                { label: "Violations", value: scopedViolations.length, color: "#d4513c" },
-                { label: "Critical", value: criticalViolations, color: criticalViolations > 0 ? "#d4513c" : "#5c6d64" },
-                { label: "Unread alerts", value: unreadCount, color: unreadCount > 0 ? "#d4513c" : "#5c6d64" },
+                { label: "Active trips", value: activeTrips, color: activeTrips > 0 ? "var(--amber)" : "var(--text-muted)" },
+                { label: "Violations", value: scopedViolations.length, color: "var(--red)" },
+                { label: "Critical", value: criticalViolations, color: criticalViolations > 0 ? "var(--red)" : "var(--text-muted)" },
+                { label: "Unread alerts", value: unreadCount, color: unreadCount > 0 ? "var(--red)" : "var(--text-muted)" },
               ].map((m) => (
                 <div key={m.label} className={styles.metricCard} style={{ border: "1px solid #dbe5df", borderRadius: 8, padding: 18 }}>
                   <span style={{ color: "#5c6d64", fontSize: 13, fontWeight: 700 }}>{m.label}</span>
@@ -980,7 +1016,7 @@ export default function OrgDashboard() {
 
         {/* ── Organisation Users ───────────────────────────────────────────── */}
         {activeSection === "users" && isOrgAdmin && (
-          <section style={{ display: "grid", gap: 28 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.twoColumn}>
               {/* Add org user form */}
               <form className={styles.formPanel} onSubmit={handleCreateOrgUser}>
@@ -1111,7 +1147,7 @@ export default function OrgDashboard() {
 
         {/* ── People ───────────────────────────────────────────────────────── */}
         {activeSection === "people" && (
-          <section style={{ display: "grid", gap: 0, position: "relative" }}>
+          <section style={{ position: "relative" }}>
 
             {/* Tab bar */}
             <div className={styles.peopleTabBar}>
@@ -1379,7 +1415,7 @@ export default function OrgDashboard() {
                 </div>
 
                 {/* Right: owner cards */}
-                <div className={styles.peopleCards} style={{ gridColumn: "span 2" }}>
+                <div className={styles.peopleCards} style={{ gridColumn: "1 / -1" }}>
                   <div className={styles.ownerGrid}>
                     {scopedOwners.map((o) => (
                       <div key={o.id} className={styles.ownerCard}>
@@ -1418,7 +1454,7 @@ export default function OrgDashboard() {
 
         {/* ── Route Templates ─────────────────────────────────────────────── */}
         {activeSection === "routes" && (
-          <section style={{ display: "grid", gap: 24 }}>
+          <section className={styles.sectionGrid}>
             <div className={styles.twoColumn}>
               <form className={styles.formPanel} onSubmit={handleCreateRouteTemplate}>
                 <div>
@@ -1577,7 +1613,7 @@ export default function OrgDashboard() {
 
         {/* ── Fleet ────────────────────────────────────────────────────────── */}
         {activeSection === "fleet" && (
-          <section style={{ display: "grid", gap: 24 }}>
+          <section className={styles.sectionGrid}>
 
             {/* ── Wizard ── */}
             <div className={styles.wizardCard}>
@@ -1659,9 +1695,9 @@ export default function OrgDashboard() {
                         </button>
                       </div>
                     ) : (
-                      <form onSubmit={(e) => handleCreateOwner(e, true)} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <form onSubmit={(e) => handleCreateOwner(e, true)} className={styles.wizardFormGrid}>
                         {orgs.length > 1 && (
-                          <label className={styles.fieldLabel} style={{ gridColumn: "1/-1" }}>
+                          <label className={`${styles.fieldLabel} ${styles.wizardFullField}`}>
                             Organisation
                             <select
                               className={styles.fieldInput}
@@ -1692,8 +1728,7 @@ export default function OrgDashboard() {
                           </label>
                         ))}
                         <button
-                          className={styles.primaryButton}
-                          style={{ gridColumn: "1/-1" }}
+                          className={`${styles.primaryButton} ${styles.wizardFullField}`}
                           type="submit"
                           disabled={isSubmitting}
                         >
@@ -1713,9 +1748,9 @@ export default function OrgDashboard() {
                         Owner: <strong>{scopedOwners.find((o) => o.id === vehicleForm.carOwnerId)?.user.fullName ?? "—"}</strong>
                       </p>
                     </div>
-                    <form onSubmit={handleRegisterVehicle} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <form onSubmit={handleRegisterVehicle} className={styles.wizardFormGrid}>
                       {orgs.length > 1 && (
-                        <label className={styles.fieldLabel} style={{ gridColumn: "1/-1" }}>
+                        <label className={`${styles.fieldLabel} ${styles.wizardFullField}`}>
                           Organisation
                           <select
                             className={styles.fieldInput}
@@ -1744,7 +1779,7 @@ export default function OrgDashboard() {
                           />
                         </label>
                       ))}
-                      <div style={{ gridColumn: "1/-1", display: "flex", gap: 10 }}>
+                      <div className={styles.wizardFullField} style={{ display: "flex", gap: 10 }}>
                         <button type="button" className={styles.secondaryButton} onClick={() => setFleetWizardStep(1)}>
                           ← Back
                         </button>
@@ -1824,11 +1859,10 @@ export default function OrgDashboard() {
                   <>
                     <div className={styles.peopleCardsHeader}>
                       <input
-                        className={styles.fieldInput}
+                        className={`${styles.fieldInput} ${styles.searchInput}`}
                         placeholder="Search vehicles…"
                         value={vehicleSearch}
                         onChange={(e) => setVehicleSearch(e.target.value)}
-                        style={{ maxWidth: 260 }}
                       />
                     </div>
                     <div className={styles.vehicleGrid}>
@@ -1890,8 +1924,8 @@ export default function OrgDashboard() {
                             <td>{formatDate(a.assignedAt)}</td>
                             <td>
                               <button
-                                className={styles.secondaryButton}
-                                style={{ minHeight: 30, fontSize: 12, borderColor: "#f3c6bd", color: "#8b2a1d" }}
+                                className={`${styles.secondaryButton} ${styles.dangerButton}`}
+                                style={{ minHeight: 30, fontSize: 12 }}
                                 onClick={() => handleRemoveAssignment(a.id)}
                               >
                                 Unassign
@@ -1983,8 +2017,7 @@ export default function OrgDashboard() {
                       const a = activeScopedAssignments.find((x) => x.vehicle.id === selectedVehicle.id);
                       return a ? (
                         <button
-                          className={styles.secondaryButton}
-                          style={{ borderColor: "#f3c6bd", color: "#8b2a1d" }}
+                          className={`${styles.secondaryButton} ${styles.dangerButton}`}
                           onClick={() => { handleRemoveAssignment(a.id); setSelectedVehicle(null); }}
                         >
                           Unassign driver
@@ -2000,7 +2033,7 @@ export default function OrgDashboard() {
 
         {/* ── Trips ────────────────────────────────────────────────────────── */}
         {activeSection === "trips" && (
-          <section style={{ display: "grid", gap: 16 }}>
+          <section className={styles.sectionGridSm}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Trips ({filteredTrips.length})</h2>
               <div className={styles.filterRow}>
@@ -2041,7 +2074,7 @@ export default function OrgDashboard() {
                       <td>{t.endTime ? formatDate(t.endTime) : "—"}</td>
                       <td>{t.maxSpeed ? `${Math.round(t.maxSpeed)} km/h` : "—"}</td>
                       <td>{t.distance ? `${t.distance.toFixed(1)} km` : "—"}</td>
-                      <td style={{ color: (t._count?.violations ?? 0) > 0 ? "#d4513c" : "inherit", fontWeight: 700 }}>
+                      <td style={{ color: (t._count?.violations ?? 0) > 0 ? "var(--red)" : "inherit", fontWeight: 700 }}>
                         {t._count?.violations ?? 0}
                       </td>
                     </tr>
@@ -2064,7 +2097,7 @@ export default function OrgDashboard() {
 
         {/* ── Violations ───────────────────────────────────────────────────── */}
         {activeSection === "violations" && (
-          <section style={{ display: "grid", gap: 16 }}>
+          <section className={styles.sectionGridSm}>
 	            <div className={styles.sectionHeader}>
 	              <h2 className={styles.sectionTitle}>
 	                Violations ({violationPagination?.total ?? scopedViolations.length})
@@ -2099,9 +2132,9 @@ export default function OrgDashboard() {
                     <tr key={v.id}>
                       <td>{v.driver?.user.fullName ?? "—"}</td>
                       <td>{v.vehicle?.registrationNumber ?? "—"}</td>
-                      <td style={{ color: "#d4513c", fontWeight: 700 }}>{Math.round(v.speed)} km/h</td>
+                      <td style={{ color: "var(--red)", fontWeight: 700 }}>{Math.round(v.speed)} km/h</td>
                       <td>{Math.round(v.speedLimit)} km/h</td>
-                      <td style={{ fontWeight: 700, color: v.severity === "CRITICAL" ? "#d4513c" : v.severity === "HIGH" ? "#c87941" : "#5c6d64" }}>
+                      <td style={{ fontWeight: 700, color: v.severity === "CRITICAL" ? "var(--red)" : v.severity === "HIGH" ? "var(--amber)" : "var(--text-muted)" }}>
                         {humanize(v.severity)}
                       </td>
                       <td>{humanize(v.violationType)}</td>
@@ -2136,7 +2169,7 @@ export default function OrgDashboard() {
 
         {/* ── Alerts ───────────────────────────────────────────────────────── */}
         {activeSection === "alerts" && (
-          <section style={{ display: "grid", gap: 16 }}>
+          <section className={styles.sectionGridSm}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 Alerts
