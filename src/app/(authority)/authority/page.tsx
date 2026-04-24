@@ -46,6 +46,10 @@ type Authority = {
   name: string;
   type: string;
   status: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  contactPerson?: string | null;
   _count?: {
     authorityUsers: number;
   };
@@ -118,6 +122,12 @@ export default function AuthorityDashboard() {
 
   const canManageAuthorityUsers =
     user?.role === "SUPER_ADMIN" || user?.role === "STAFF" || user?.authorityUserRole === "ADMIN";
+
+  const canEditAuthority = user?.role === "SUPER_ADMIN" || user?.role === "STAFF";
+
+  // Edit state — authority
+  const [editingAuthority, setEditingAuthority] = useState<Authority | null>(null);
+  const [authorityEditForm, setAuthorityEditForm] = useState({ name: "", type: "", contactPerson: "", phone: "", email: "", address: "", status: "" });
 
   useAutoDismissMessage(notice, setNotice, NOTICE_TOAST_DISMISS_MS);
   useAutoDismissMessage(error, setError, ERROR_TOAST_DISMISS_MS);
@@ -244,6 +254,48 @@ export default function AuthorityDashboard() {
       await loadData(token, filters);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to create authority user.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditAuthority = (authority: Authority) => {
+    setEditingAuthority(authority);
+    setAuthorityEditForm({
+      name: authority.name,
+      type: authority.type,
+      contactPerson: authority.contactPerson ?? "",
+      phone: authority.phone ?? "",
+      email: authority.email ?? "",
+      address: authority.address ?? "",
+      status: authority.status,
+    });
+  };
+
+  const handleUpdateAuthority = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!token || !editingAuthority) return;
+    setIsSubmitting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await apiRequest(`/authorities/${editingAuthority.id}`, token, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: authorityEditForm.name || undefined,
+          type: (authorityEditForm.type as "AUTHORITY" | "REGULATOR") || undefined,
+          contactPerson: authorityEditForm.contactPerson || undefined,
+          phone: authorityEditForm.phone || undefined,
+          email: authorityEditForm.email || undefined,
+          address: authorityEditForm.address || undefined,
+          status: (authorityEditForm.status as "ACTIVE" | "INACTIVE" | "SUSPENDED") || undefined,
+        }),
+      });
+      setEditingAuthority(null);
+      setNotice("Authority updated.");
+      await loadData(token, filters);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update authority.");
     } finally {
       setIsSubmitting(false);
     }
@@ -680,7 +732,48 @@ export default function AuthorityDashboard() {
         )}
 
         {activeSection === "users" && canManageAuthorityUsers && (
-          <section className={styles.managementGrid}>
+          <section className={styles.sectionGrid}>
+            {/* Authority cards with edit (SUPER_ADMIN/STAFF only) */}
+            {canEditAuthority && authorities.length > 0 && (
+              <div>
+                <div className={styles.sectionHeader} style={{ marginBottom: 14 }}>
+                  <div>
+                    <p className={styles.eyebrow}>Registered authorities</p>
+                    <h2 className={styles.sectionTitle}>Authorities ({authorities.length})</h2>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 14 }}>
+                  {authorities.map((auth) => (
+                    <div key={auth.id} className={styles.metricCard} style={{ border: "1px solid #dbe5df", borderRadius: 10, padding: 18, display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <div>
+                          <p style={{ fontWeight: 800, fontSize: 15, margin: 0 }}>{auth.name}</p>
+                          <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0 }}>{humanize(auth.type)}</p>
+                        </div>
+                        <span className={auth.status === "ACTIVE" ? styles.chipGreen : styles.chipRed}>
+                          {humanize(auth.status)}
+                        </span>
+                      </div>
+                      {auth._count && (
+                        <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0 }}>
+                          {auth._count.authorityUsers} user{auth._count.authorityUsers !== 1 ? "s" : ""}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        style={{ minHeight: 32, fontSize: 12 }}
+                        onClick={() => openEditAuthority(auth)}
+                      >
+                        Edit authority
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className={styles.managementGrid}>
             <form className={styles.formPanel} onSubmit={handleCreateAuthorityUser}>
               <div>
                 <p className={styles.eyebrow}>Authority admin</p>
@@ -790,6 +883,7 @@ export default function AuthorityDashboard() {
                 </table>
               </div>
             </article>
+            </div>
           </section>
         )}
 
@@ -832,6 +926,66 @@ export default function AuthorityDashboard() {
           </section>
         )}
       </main>
+
+      {/* ── Edit Authority modal ── */}
+      {editingAuthority && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingAuthority(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit authority — {editingAuthority.name}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingAuthority(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateAuthority} className={styles.formGrid}>
+              {[
+                { key: "name",          label: "Name",           placeholder: editingAuthority.name },
+                { key: "contactPerson", label: "Contact person", placeholder: editingAuthority.contactPerson ?? "e.g. Kofi Agyeman" },
+                { key: "phone",         label: "Phone",          placeholder: editingAuthority.phone ?? "+233 30 000 0000" },
+                { key: "email",         label: "Email",          placeholder: editingAuthority.email ?? "contact@authority.gov.gh" },
+                { key: "address",       label: "Address",        placeholder: editingAuthority.address ?? "Accra, Ghana" },
+              ].map(({ key, label, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input
+                    className={styles.fieldInput}
+                    placeholder={placeholder}
+                    value={(authorityEditForm as Record<string, string>)[key]}
+                    onChange={(e) => setAuthorityEditForm({ ...authorityEditForm, [key]: e.target.value })}
+                  />
+                </label>
+              ))}
+              <label className={styles.fieldLabel}>
+                Type
+                <select
+                  className={styles.fieldInput}
+                  value={authorityEditForm.type}
+                  onChange={(e) => setAuthorityEditForm({ ...authorityEditForm, type: e.target.value })}
+                >
+                  <option value="AUTHORITY">Authority</option>
+                  <option value="REGULATOR">Regulator</option>
+                </select>
+              </label>
+              <label className={styles.fieldLabel}>
+                Status
+                <select
+                  className={styles.fieldInput}
+                  value={authorityEditForm.status}
+                  onChange={(e) => setAuthorityEditForm({ ...authorityEditForm, status: e.target.value })}
+                >
+                  {["ACTIVE", "INACTIVE", "SUSPENDED"].map((s) => (
+                    <option key={s} value={s}>{humanize(s)}</option>
+                  ))}
+                </select>
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingAuthority(null)}>Cancel</button>
+                <button className={styles.primaryButton} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>
+                  {isSubmitting ? "Saving…" : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
