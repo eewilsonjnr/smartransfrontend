@@ -440,6 +440,138 @@ export default function Home() {
   useAutoDismissMessage(notice, setNotice, NOTICE_TOAST_DISMISS_MS);
   useAutoDismissMessage(error, setError, ERROR_TOAST_DISMISS_MS);
 
+  // ── Edit state ───────────────────────────────────────────────────────────────
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [orgEditForm, setOrgEditForm] = useState({ name: "", contactPerson: "", phone: "", email: "", address: "", status: "" });
+
+  const [editingAuthority, setEditingAuthority] = useState<Authority | null>(null);
+  const [authorityEditForm, setAuthorityEditForm] = useState({ name: "", type: "", contactPerson: "", phone: "", email: "", address: "", status: "" });
+
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [driverEditForm, setDriverEditForm] = useState({ fullName: "", email: "", phone: "", nationalId: "" });
+
+  const [editingOwner, setEditingOwner] = useState<CarOwner | null>(null);
+  const [ownerEditForm, setOwnerEditForm] = useState({ fullName: "", email: "", phone: "", address: "" });
+
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [vehicleEditForm, setVehicleEditForm] = useState({ vehicleType: "", make: "", model: "", color: "", status: "" });
+
+  const [editingRoute, setEditingRoute] = useState<RouteTemplate | null>(null);
+  const [routeEditForm, setRouteEditForm] = useState({ name: "", origin: "", destination: "", estimatedDistanceKm: "", estimatedDurationMinutes: "", speedLimit: "", status: "" });
+
+  const openEditOrg = (org: Organization) => {
+    setEditingOrg(org);
+    setOrgEditForm({ name: org.name, contactPerson: "", phone: org.phone ?? "", email: org.email ?? "", address: "", status: org.status });
+  };
+  const handleUpdateOrg = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingOrg) return;
+    await updateWithRefresh(`/organizations/${editingOrg.id}`, {
+      name: orgEditForm.name || undefined,
+      contactPerson: orgEditForm.contactPerson || undefined,
+      phone: orgEditForm.phone || undefined,
+      email: orgEditForm.email || undefined,
+      address: orgEditForm.address || undefined,
+      status: orgEditForm.status || undefined,
+    }, "Organisation updated.");
+    setEditingOrg(null);
+  };
+
+  const openEditAuthority = (auth: Authority) => {
+    setEditingAuthority(auth);
+    setAuthorityEditForm({ name: auth.name, type: auth.type, contactPerson: auth.contactPerson ?? "", phone: auth.phone ?? "", email: auth.email ?? "", address: "", status: auth.status });
+  };
+  const handleUpdateAuthority = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingAuthority) return;
+    await updateWithRefresh(`/authorities/${editingAuthority.id}`, {
+      name: authorityEditForm.name || undefined,
+      type: (authorityEditForm.type as "AUTHORITY" | "REGULATOR") || undefined,
+      contactPerson: authorityEditForm.contactPerson || undefined,
+      phone: authorityEditForm.phone || undefined,
+      email: authorityEditForm.email || undefined,
+      address: authorityEditForm.address || undefined,
+      status: (authorityEditForm.status as "ACTIVE" | "INACTIVE" | "SUSPENDED") || undefined,
+    }, "Authority updated.");
+    setEditingAuthority(null);
+  };
+
+  const openEditDriver = (driver: Driver) => {
+    setEditingDriver(driver);
+    setDriverEditForm({ fullName: driver.user.fullName, email: driver.user.email ?? "", phone: driver.user.phone ?? "", nationalId: "" });
+  };
+  const handleUpdateDriver = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingDriver) return;
+    await updateWithRefresh(`/drivers/${editingDriver.id}`, {
+      fullName: driverEditForm.fullName || undefined,
+      email: driverEditForm.email || undefined,
+      phone: driverEditForm.phone || undefined,
+      nationalId: driverEditForm.nationalId || undefined,
+    }, "Driver updated.");
+    setEditingDriver(null);
+  };
+
+  const openEditOwner = (owner: CarOwner) => {
+    setEditingOwner(owner);
+    setOwnerEditForm({ fullName: owner.user.fullName, email: owner.user.email ?? "", phone: owner.user.phone ?? "", address: owner.address ?? "" });
+  };
+  const handleUpdateOwner = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingOwner) return;
+    await updateWithRefresh(`/car-owners/${editingOwner.id}`, {
+      fullName: ownerEditForm.fullName || undefined,
+      email: ownerEditForm.email || undefined,
+      phone: ownerEditForm.phone || undefined,
+      address: ownerEditForm.address || undefined,
+    }, "Owner updated.");
+    setEditingOwner(null);
+  };
+
+  const openEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setVehicleEditForm({ vehicleType: vehicle.vehicleType, make: vehicle.make ?? "", model: vehicle.model ?? "", color: vehicle.color ?? "", status: vehicle.status });
+  };
+  const handleUpdateVehicle = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingVehicle) return;
+    await updateWithRefresh(`/vehicles/${editingVehicle.id}`, {
+      vehicleType: vehicleEditForm.vehicleType || undefined,
+      make: vehicleEditForm.make || undefined,
+      model: vehicleEditForm.model || undefined,
+      color: vehicleEditForm.color || undefined,
+      status: (vehicleEditForm.status as "ACTIVE" | "INACTIVE" | "MAINTENANCE") || undefined,
+    }, "Vehicle updated.");
+    setEditingVehicle(null);
+  };
+
+  const openEditRoute = (route: RouteTemplate) => {
+    setEditingRoute(route);
+    setRouteEditForm({
+      name: route.name,
+      origin: route.origin,
+      destination: route.destination,
+      estimatedDistanceKm: route.estimatedDistanceKm ? String(route.estimatedDistanceKm) : "",
+      estimatedDurationMinutes: route.estimatedDurationMinutes ? String(route.estimatedDurationMinutes) : "",
+      speedLimit: route.speedLimit ? String(route.speedLimit) : "",
+      status: route.status,
+    });
+  };
+  const handleUpdateRoute = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingRoute) return;
+    await updateWithRefresh(`/route-templates/${editingRoute.id}`, {
+      name: routeEditForm.name || undefined,
+      origin: routeEditForm.origin || undefined,
+      destination: routeEditForm.destination || undefined,
+      estimatedDistanceKm: routeEditForm.estimatedDistanceKm ? Number(routeEditForm.estimatedDistanceKm) : undefined,
+      estimatedDurationMinutes: routeEditForm.estimatedDurationMinutes ? Number(routeEditForm.estimatedDurationMinutes) : undefined,
+      speedLimit: routeEditForm.speedLimit ? Number(routeEditForm.speedLimit) : undefined,
+      status: (routeEditForm.status as "ACTIVE" | "INACTIVE") || undefined,
+    }, "Route updated.");
+    setEditingRoute(null);
+  };
+
   const buildViolationQuery = (filters: ReportFilters = reportFilters) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -1376,6 +1508,7 @@ export default function Home() {
                   <InlineActions
                     key="actions"
                     actions={[
+                      { label: "Edit", onClick: () => openEditOrg(organization) },
                       {
                         label: organization.status === "ACTIVE" ? "Deactivate" : "Activate",
                         danger: organization.status === "ACTIVE",
@@ -1490,6 +1623,7 @@ export default function Home() {
                     <InlineActions
                       key="actions"
                       actions={[
+                        { label: "Edit", onClick: () => openEditAuthority(authority) },
                         {
                           label: authority.status === "ACTIVE" ? "Deactivate" : "Activate",
                           danger: authority.status === "ACTIVE",
@@ -1692,8 +1826,20 @@ export default function Home() {
                     <StatusPill key="status" value={driver.status} />,
                     driver.consentGiven ? "Recorded" : "Pending",
                     driver.user.email ?? driver.user.phone ?? "—",
+                    <InlineActions
+                      key="actions"
+                      actions={[
+                        { label: "Edit", onClick: () => openEditDriver(driver) },
+                        {
+                          label: driver.status === "ACTIVE" ? "Deactivate" : "Activate",
+                          danger: driver.status === "ACTIVE",
+                          onClick: () => updateWithRefresh(`/drivers/${driver.id}`, { status: driver.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }, "Driver status updated."),
+                        },
+                      ]}
+                    />,
                   ])}
                   empty="No drivers found"
+                  trailingColumn="Actions"
                 />
               </article>
 
@@ -1709,8 +1855,13 @@ export default function Home() {
                     owner._count?.vehicles ?? 0,
                     owner._count?.trips ?? 0,
                     owner._count?.violations ?? 0,
+                    <InlineActions
+                      key="actions"
+                      actions={[{ label: "Edit", onClick: () => openEditOwner(owner) }]}
+                    />,
                   ])}
                   empty="No owners found"
+                  trailingColumn="Actions"
                 />
               </article>
             </div>
@@ -1830,6 +1981,7 @@ export default function Home() {
                   <InlineActions
                     key="actions"
                     actions={[
+                      { label: "Edit", onClick: () => openEditRoute(routeTemplate) },
                       {
                         label: routeTemplate.status === "ACTIVE" ? "Deactivate" : "Activate",
                         danger: routeTemplate.status === "ACTIVE",
@@ -1975,8 +2127,13 @@ export default function Home() {
                     vehicle.organization?.name ?? "—",
                     vehicle.carOwner?.user.fullName ?? "—",
                     <StatusPill key="status" value={vehicle.status} />,
+                    <InlineActions
+                      key="actions"
+                      actions={[{ label: "Edit", onClick: () => openEditVehicle(vehicle) }]}
+                    />,
                   ])}
                   empty="No vehicles found"
+                  trailingColumn="Actions"
                 />
               </article>
 
@@ -2242,6 +2399,216 @@ export default function Home() {
         )}
 
       </section>
+
+      {/* ── Edit Organisation modal ── */}
+      {editingOrg && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingOrg(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit organisation — {editingOrg.name}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingOrg(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateOrg} className={styles.formGrid}>
+              {([
+                { key: "name",          label: "Name",           placeholder: editingOrg.name },
+                { key: "contactPerson", label: "Contact person", placeholder: "e.g. Kwame Mensah" },
+                { key: "phone",         label: "Phone",          placeholder: editingOrg.phone ?? "+233 20 000 0000" },
+                { key: "email",         label: "Email",          placeholder: editingOrg.email ?? "org@example.com" },
+                { key: "address",       label: "Address",        placeholder: "Accra, Ghana" },
+              ] as const).map(({ key, label, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input className={styles.fieldInput} placeholder={placeholder} value={(orgEditForm as Record<string, string>)[key]} onChange={(e) => setOrgEditForm({ ...orgEditForm, [key]: e.target.value })} />
+                </label>
+              ))}
+              <label className={styles.fieldLabel}>
+                Status
+                <select className={styles.fieldInput} value={orgEditForm.status} onChange={(e) => setOrgEditForm({ ...orgEditForm, status: e.target.value })}>
+                  {["ACTIVE", "INACTIVE", "SUSPENDED", "PENDING"].map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
+                </select>
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingOrg(null)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Authority modal ── */}
+      {editingAuthority && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingAuthority(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit authority — {editingAuthority.name}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingAuthority(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateAuthority} className={styles.formGrid}>
+              {([
+                { key: "name",          label: "Name",           placeholder: editingAuthority.name },
+                { key: "contactPerson", label: "Contact person", placeholder: editingAuthority.contactPerson ?? "e.g. Kofi Agyeman" },
+                { key: "phone",         label: "Phone",          placeholder: editingAuthority.phone ?? "+233 30 000 0000" },
+                { key: "email",         label: "Email",          placeholder: editingAuthority.email ?? "contact@authority.gov.gh" },
+                { key: "address",       label: "Address",        placeholder: "Accra, Ghana" },
+              ] as const).map(({ key, label, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input className={styles.fieldInput} placeholder={placeholder} value={(authorityEditForm as Record<string, string>)[key]} onChange={(e) => setAuthorityEditForm({ ...authorityEditForm, [key]: e.target.value })} />
+                </label>
+              ))}
+              <label className={styles.fieldLabel}>
+                Type
+                <select className={styles.fieldInput} value={authorityEditForm.type} onChange={(e) => setAuthorityEditForm({ ...authorityEditForm, type: e.target.value })}>
+                  <option value="AUTHORITY">Authority</option>
+                  <option value="REGULATOR">Regulator</option>
+                </select>
+              </label>
+              <label className={styles.fieldLabel}>
+                Status
+                <select className={styles.fieldInput} value={authorityEditForm.status} onChange={(e) => setAuthorityEditForm({ ...authorityEditForm, status: e.target.value })}>
+                  {["ACTIVE", "INACTIVE", "SUSPENDED"].map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
+                </select>
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingAuthority(null)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Driver modal ── */}
+      {editingDriver && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingDriver(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit driver — {editingDriver.user.fullName}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingDriver(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateDriver} className={styles.formGrid}>
+              {([
+                { key: "fullName",   label: "Full name",  placeholder: editingDriver.user.fullName },
+                { key: "phone",      label: "Phone",       placeholder: editingDriver.user.phone ?? "+233 20 000 0000" },
+                { key: "email",      label: "Email",       placeholder: editingDriver.user.email ?? "driver@example.com" },
+                { key: "nationalId", label: "National ID", placeholder: "GHA-000000000-0" },
+              ] as const).map(({ key, label, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input className={styles.fieldInput} placeholder={placeholder} value={(driverEditForm as Record<string, string>)[key]} onChange={(e) => setDriverEditForm({ ...driverEditForm, [key]: e.target.value })} />
+                </label>
+              ))}
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingDriver(null)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Owner modal ── */}
+      {editingOwner && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingOwner(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit owner — {editingOwner.user.fullName}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingOwner(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateOwner} className={styles.formGrid}>
+              {([
+                { key: "fullName", label: "Full name", placeholder: editingOwner.user.fullName },
+                { key: "phone",    label: "Phone",      placeholder: editingOwner.user.phone ?? "+233 24 000 0000" },
+                { key: "email",    label: "Email",      placeholder: editingOwner.user.email ?? "owner@example.com" },
+                { key: "address",  label: "Address",    placeholder: editingOwner.address ?? "Tema, Greater Accra" },
+              ] as const).map(({ key, label, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input className={styles.fieldInput} placeholder={placeholder} value={(ownerEditForm as Record<string, string>)[key]} onChange={(e) => setOwnerEditForm({ ...ownerEditForm, [key]: e.target.value })} />
+                </label>
+              ))}
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingOwner(null)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Vehicle modal ── */}
+      {editingVehicle && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingVehicle(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit vehicle — {editingVehicle.registrationNumber}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingVehicle(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateVehicle} className={styles.formGrid}>
+              {([
+                { key: "vehicleType", label: "Vehicle type", placeholder: editingVehicle.vehicleType },
+                { key: "make",        label: "Make",          placeholder: editingVehicle.make ?? "Toyota" },
+                { key: "model",       label: "Model",         placeholder: editingVehicle.model ?? "HiAce" },
+                { key: "color",       label: "Colour",        placeholder: editingVehicle.color ?? "Yellow" },
+              ] as const).map(({ key, label, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input className={styles.fieldInput} placeholder={placeholder} value={(vehicleEditForm as Record<string, string>)[key]} onChange={(e) => setVehicleEditForm({ ...vehicleEditForm, [key]: e.target.value })} />
+                </label>
+              ))}
+              <label className={styles.fieldLabel}>
+                Status
+                <select className={styles.fieldInput} value={vehicleEditForm.status} onChange={(e) => setVehicleEditForm({ ...vehicleEditForm, status: e.target.value })}>
+                  {["ACTIVE", "INACTIVE", "MAINTENANCE"].map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
+                </select>
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingVehicle(null)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Route modal ── */}
+      {editingRoute && (
+        <div className={styles.modalBackdrop} onClick={() => setEditingRoute(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Edit route — {editingRoute.name}</h3>
+              <button className={styles.drawerClose} onClick={() => setEditingRoute(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateRoute} className={styles.formGrid}>
+              {([
+                { key: "name",                     label: "Route name",      type: "text",   placeholder: editingRoute.name },
+                { key: "origin",                   label: "Origin",           type: "text",   placeholder: editingRoute.origin },
+                { key: "destination",              label: "Destination",      type: "text",   placeholder: editingRoute.destination },
+                { key: "estimatedDistanceKm",      label: "Distance (km)",    type: "number", placeholder: "e.g. 250" },
+                { key: "estimatedDurationMinutes", label: "Duration (min)",   type: "number", placeholder: "e.g. 180" },
+                { key: "speedLimit",               label: "Speed limit km/h", type: "number", placeholder: "80" },
+              ] as const).map(({ key, label, type, placeholder }) => (
+                <label key={key} className={styles.fieldLabel}>
+                  {label}
+                  <input className={styles.fieldInput} type={type} placeholder={placeholder} min={type === "number" ? "1" : undefined} step={key === "estimatedDistanceKm" ? "0.1" : type === "number" ? "1" : undefined} value={(routeEditForm as Record<string, string>)[key]} onChange={(e) => setRouteEditForm({ ...routeEditForm, [key]: e.target.value })} />
+                </label>
+              ))}
+              <label className={styles.fieldLabel}>
+                Status
+                <select className={styles.fieldInput} value={routeEditForm.status} onChange={(e) => setRouteEditForm({ ...routeEditForm, status: e.target.value })}>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setEditingRoute(null)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
