@@ -282,6 +282,10 @@ export default function OrgDashboard() {
   const [editingRoute, setEditingRoute] = useState<RouteTemplate | null>(null);
   const [routeEditForm, setRouteEditForm] = useState({ name: "", origin: "", destination: "", estimatedDistanceKm: "", estimatedDurationMinutes: "", speedLimit: "", status: "" });
 
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+
   // Fleet wizard
   const [fleetWizardStep, setFleetWizardStep] = useState<1 | 2 | 3>(1);
   const [wizardNewOwner, setWizardNewOwner] = useState(false);
@@ -377,6 +381,34 @@ export default function OrgDashboard() {
     setUser(null);
     localStorage.removeItem("smartrans_org_token");
     localStorage.removeItem("smartrans_org_user");
+  };
+
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await apiRequest("/auth/change-password", token, {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: changePasswordForm.currentPassword,
+          newPassword: changePasswordForm.newPassword,
+        }),
+      });
+      setShowChangePassword(false);
+      setChangePasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setNotice("Password changed. You will be signed out.");
+      setTimeout(() => handleLogout(), 1500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to change password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -913,6 +945,33 @@ export default function OrgDashboard() {
     }
   };
 
+  const handleCancelTrip = async (tripId: string) => {
+    if (!token) return;
+    try {
+      await apiRequest(`/trips/${tripId}/cancel`, token, { method: "PATCH" });
+      await loadData(token);
+      setNotice("Trip cancelled.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to cancel trip.");
+    }
+  };
+
+  const handleUpdateDeliveryStatus = async (alertId: string, deliveryStatus: string) => {
+    if (!token) return;
+    try {
+      await apiRequest(`/alerts/${alertId}/delivery-status`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ deliveryStatus }),
+      });
+      setAlerts((prev) =>
+        prev.map((a) => (a.id === alertId ? { ...a, deliveryStatus } : a)),
+      );
+      setNotice("Delivery status updated.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update delivery status.");
+    }
+  };
+
   // ── Derived data ─────────────────────────────────────────────────────────────
 
   const q = search.toLowerCase();
@@ -1095,6 +1154,9 @@ export default function OrgDashboard() {
         <div className={styles.sidebarFooter}>
           <p className={styles.footerUser}>{user?.fullName}</p>
           <p className={styles.footerRole}>{humanize(user?.role ?? "")}</p>
+          <button className={styles.secondaryButton} style={{ marginBottom: 6 }} onClick={() => setShowChangePassword(true)}>
+            Change password
+          </button>
           <button className={styles.logoutButton} onClick={handleLogout}>
             Sign out
           </button>
@@ -2320,6 +2382,7 @@ export default function OrgDashboard() {
                   <tr>
                     <th>Driver</th><th>Vehicle</th><th>Route</th><th>Status</th>
                     <th>Start</th><th>End</th><th>Max speed</th><th>Distance</th><th>Violations</th>
+                    {isOrgAdmin && <th>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -2336,10 +2399,22 @@ export default function OrgDashboard() {
                       <td style={{ color: (t._count?.violations ?? 0) > 0 ? "var(--red)" : "inherit", fontWeight: 700 }}>
                         {t._count?.violations ?? 0}
                       </td>
+                      {isOrgAdmin && (
+                        <td>
+                          {t.status === "IN_PROGRESS" && (
+                            <button
+                              className={styles.dangerButton}
+                              onClick={() => handleCancelTrip(t.id)}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                   {pagedTrips.length === 0 && (
-                    <tr><td colSpan={9} className={styles.emptyState}>No trips found.</td></tr>
+                    <tr><td colSpan={isOrgAdmin ? 10 : 9} className={styles.emptyState}>No trips found.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -2382,7 +2457,7 @@ export default function OrgDashboard() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Driver</th><th>Vehicle</th><th>Speed</th>
+                    <th>Driver</th><th>Vehicle</th><th>Colour</th><th>Speed</th>
                     <th>Limit</th><th>Severity</th><th>Type</th><th>Time</th>
                   </tr>
                 </thead>
@@ -2391,6 +2466,7 @@ export default function OrgDashboard() {
                     <tr key={v.id}>
                       <td>{v.driver?.user.fullName ?? "—"}</td>
                       <td>{v.vehicle?.registrationNumber ?? "—"}</td>
+                      <td>{v.vehicle?.color ?? "—"}</td>
                       <td style={{ color: "var(--red)", fontWeight: 700 }}>{Math.round(v.speed)} km/h</td>
                       <td>{Math.round(v.speedLimit)} km/h</td>
                       <td style={{ fontWeight: 700, color: v.severity === "CRITICAL" ? "var(--red)" : v.severity === "HIGH" ? "var(--amber)" : "var(--text-muted)" }}>
@@ -2401,7 +2477,7 @@ export default function OrgDashboard() {
                     </tr>
                   ))}
 	                  {scopedViolations.length === 0 && (
-                    <tr><td colSpan={7} className={styles.emptyState}>No violations.</td></tr>
+                    <tr><td colSpan={8} className={styles.emptyState}>No violations.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -2452,9 +2528,25 @@ export default function OrgDashboard() {
                     {!alert.isRead && <span className={styles.unreadDot} />}
                   </div>
                   <p className={styles.alertMessage}>{alert.message}</p>
-                  <p className={styles.alertMeta}>
-                    {humanize(alert.deliveryChannel)} · {formatDate(alert.createdAt)}
-                  </p>
+                  <div className={styles.alertMeta} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span>{humanize(alert.deliveryChannel)} · {formatDate(alert.createdAt)}</span>
+                    {isOrgAdmin && (
+                      <select
+                        className={styles.filterSelect}
+                        style={{ padding: "2px 6px", fontSize: 12 }}
+                        value={alert.deliveryStatus}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          void handleUpdateDeliveryStatus(alert.id, e.target.value);
+                        }}
+                      >
+                        {["PENDING", "SENT", "FAILED"].map((s) => (
+                          <option key={s} value={s}>{humanize(s)}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
               ))}
               {alerts.length === 0 && <p className={styles.emptyState}>No alerts.</p>}
@@ -2462,6 +2554,63 @@ export default function OrgDashboard() {
           </section>
         )}
       </main>
+
+      {/* ── Change password modal ── */}
+      {showChangePassword && (
+        <div className={styles.modalBackdrop} onClick={() => setShowChangePassword(false)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Change password</h3>
+              <button className={styles.drawerClose} onClick={() => setShowChangePassword(false)}>✕</button>
+            </div>
+            <form onSubmit={handleChangePassword} className={styles.formGrid}>
+              <label className={styles.fieldLabel}>
+                Current password
+                <input
+                  className={styles.fieldInput}
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={changePasswordForm.currentPassword}
+                  onChange={(e) => setChangePasswordForm({ ...changePasswordForm, currentPassword: e.target.value })}
+                />
+              </label>
+              <label className={styles.fieldLabel}>
+                New password
+                <input
+                  className={styles.fieldInput}
+                  type="password"
+                  minLength={8}
+                  required
+                  autoComplete="new-password"
+                  value={changePasswordForm.newPassword}
+                  onChange={(e) => setChangePasswordForm({ ...changePasswordForm, newPassword: e.target.value })}
+                />
+              </label>
+              <label className={styles.fieldLabel}>
+                Confirm new password
+                <input
+                  className={styles.fieldInput}
+                  type="password"
+                  minLength={8}
+                  required
+                  autoComplete="new-password"
+                  value={changePasswordForm.confirmPassword}
+                  onChange={(e) => setChangePasswordForm({ ...changePasswordForm, confirmPassword: e.target.value })}
+                />
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setShowChangePassword(false)}>
+                  Cancel
+                </button>
+                <button className={styles.primaryButton} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>
+                  {isSubmitting ? "Saving…" : "Update password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Edit Organisation modal ── */}
       {editingOrg && (

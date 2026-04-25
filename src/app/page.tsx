@@ -459,6 +459,10 @@ export default function Home() {
   const [editingRoute, setEditingRoute] = useState<RouteTemplate | null>(null);
   const [routeEditForm, setRouteEditForm] = useState({ name: "", origin: "", destination: "", estimatedDistanceKm: "", estimatedDurationMinutes: "", speedLimit: "", status: "" });
 
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+
   const openEditOrg = (org: Organization) => {
     setEditingOrg(org);
     setOrgEditForm({ name: org.name, contactPerson: "", phone: org.phone ?? "", email: org.email ?? "", address: "", status: org.status });
@@ -570,6 +574,59 @@ export default function Home() {
       status: (routeEditForm.status as "ACTIVE" | "INACTIVE") || undefined,
     }, "Route updated.");
     setEditingRoute(null);
+  };
+
+  const handleCancelTrip = async (tripId: string) => {
+    await updateWithRefresh(`/trips/${tripId}/cancel`, undefined, "Trip cancelled.");
+  };
+
+  const handleUpdateDeliveryStatus = async (alertId: string, deliveryStatus: string) => {
+    if (!token) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await apiRequest(`/alerts/${alertId}/delivery-status`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ deliveryStatus }),
+      });
+      setData((prev) => ({
+        ...prev,
+        alerts: prev.alerts.map((a) => (a.id === alertId ? { ...a, deliveryStatus } : a)),
+      }));
+      setNotice("Delivery status updated.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update delivery status.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await apiRequest("/auth/change-password", token, {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: changePasswordForm.currentPassword,
+          newPassword: changePasswordForm.newPassword,
+        }),
+      });
+      setShowChangePassword(false);
+      setChangePasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setNotice("Password changed. You will be signed out.");
+      setTimeout(() => handleLogout(), 1500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to change password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const buildViolationQuery = (filters: ReportFilters = reportFilters) => {
@@ -1304,6 +1361,16 @@ export default function Home() {
               <p className={styles.sidebarUserName}>{user?.fullName}</p>
               <p className={styles.sidebarUserRole}>{humanize(user?.role ?? "")}</p>
             </div>
+            <button
+              type="button"
+              className={styles.sidebarSignOut}
+              onClick={() => setShowChangePassword(true)}
+              title="Change password"
+              aria-label="Change password"
+              style={{ marginRight: 4 }}
+            >
+              ⚿
+            </button>
             <button
               type="button"
               className={styles.sidebarSignOut}
@@ -2184,8 +2251,17 @@ export default function Home() {
                 trip.endTime ? formatDate(trip.endTime) : "Open",
                 trip.maxSpeed ? `${Math.round(trip.maxSpeed)} km/h` : "—",
                 trip._count?.locations ?? 0,
+                trip.status === "IN_PROGRESS" ? (
+                  <InlineActions
+                    key="actions"
+                    actions={[
+                      { label: "Cancel", danger: true, onClick: () => void handleCancelTrip(trip.id) },
+                    ]}
+                  />
+                ) : null,
               ])}
               empty="No trips found"
+              trailingColumn="Actions"
             />
           </section>
         )}
@@ -2196,10 +2272,11 @@ export default function Home() {
               <h2>Violations ({filteredViolations.length})</h2>
             </div>
             <DataTable
-              columns={["Driver", "Vehicle", "Organisation", "Speed", "Limit", "Severity", "Type", "Time"]}
+              columns={["Driver", "Vehicle", "Colour", "Organisation", "Speed", "Limit", "Severity", "Type", "Time"]}
               rows={filteredViolations.map((violation) => [
                 violation.driver?.user.fullName ?? "—",
                 violation.vehicle?.registrationNumber ?? "—",
+                violation.vehicle?.color ?? "—",
                 violation.organization?.name ?? "—",
                 `${Math.round(violation.speed)} km/h`,
                 `${Math.round(violation.speedLimit)} km/h`,
@@ -2223,7 +2300,16 @@ export default function Home() {
                 humanize(alert.alertType),
                 alert.message,
                 humanize(alert.deliveryChannel),
-                <StatusPill key="delivery" value={alert.deliveryStatus} />,
+                <select
+                  key="delivery"
+                  style={{ fontSize: 12, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", cursor: "pointer" }}
+                  value={alert.deliveryStatus}
+                  onChange={(e) => void handleUpdateDeliveryStatus(alert.id, e.target.value)}
+                >
+                  {["PENDING", "SENT", "FAILED"].map((s) => (
+                    <option key={s} value={s}>{humanize(s)}</option>
+                  ))}
+                </select>,
                 alert.isRead ? "Read" : "Unread",
                 formatDate(alert.createdAt),
               ])}
@@ -2566,6 +2652,59 @@ export default function Home() {
               <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setEditingVehicle(null)}>Cancel</button>
                 <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Change password modal ── */}
+      {showChangePassword && (
+        <div className={styles.modalBackdrop} onClick={() => setShowChangePassword(false)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Change password</h3>
+              <button className={styles.drawerClose} onClick={() => setShowChangePassword(false)}>✕</button>
+            </div>
+            <form onSubmit={handleChangePassword} className={styles.formGrid}>
+              <label className={styles.fieldLabel}>
+                Current password
+                <input
+                  className={styles.fieldInput}
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={changePasswordForm.currentPassword}
+                  onChange={(e) => setChangePasswordForm({ ...changePasswordForm, currentPassword: e.target.value })}
+                />
+              </label>
+              <label className={styles.fieldLabel}>
+                New password
+                <input
+                  className={styles.fieldInput}
+                  type="password"
+                  minLength={8}
+                  required
+                  autoComplete="new-password"
+                  value={changePasswordForm.newPassword}
+                  onChange={(e) => setChangePasswordForm({ ...changePasswordForm, newPassword: e.target.value })}
+                />
+              </label>
+              <label className={styles.fieldLabel}>
+                Confirm new password
+                <input
+                  className={styles.fieldInput}
+                  type="password"
+                  minLength={8}
+                  required
+                  autoComplete="new-password"
+                  value={changePasswordForm.confirmPassword}
+                  onChange={(e) => setChangePasswordForm({ ...changePasswordForm, confirmPassword: e.target.value })}
+                />
+              </label>
+              <div style={{ display: "flex", gap: 10, gridColumn: "1/-1" }}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setShowChangePassword(false)}>Cancel</button>
+                <button className={styles.primaryAction} type="submit" disabled={isSubmitting} style={{ flex: 1 }}>{isSubmitting ? "Saving…" : "Update password"}</button>
               </div>
             </form>
           </div>
